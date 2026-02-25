@@ -1,0 +1,40 @@
+{
+  "id": "cloudphone",
+  "name": "CloudPhone Plugin",
+  "version": "1.0.0",
+  "description": "OpenClaw CloudPhone 插件 —— 提供设备连接链路查询等 Agent 工具能力",
+  "configSchema": {
+    "type": "object",
+    "additionalProperties": false,
+    "properties": {
+      "baseUrl": {
+        "type": "string",
+        "description": "CloudPhone API 基础地址",
+        "default": "https://cptest.yaltc.cn"
+      },
+      "token": {
+        "type": "string",
+        "description": "Bearer Token 鉴权凭证"
+      },
+      "timeout": {
+        "type": "number",
+        "description": "请求超时时间（毫秒）",
+        "default": 5000
+      }
+    }
+  },
+  "uiHints": {
+    "baseUrl": {
+      "label": "API 基础地址",
+      "placeholder": "https://cptest.yaltc.cn"
+    },
+    "token": {
+      "label": "Bearer Token",
+      "placeholder": "输入鉴权 Token",
+      "sensitive": true
+    },
+    "timeout": {
+      "label": "请求超时（ms）"
+    }
+  }
+}
