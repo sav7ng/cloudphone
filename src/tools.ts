@@ -37,7 +37,13 @@ export interface ToolDefinition {
     properties: Record<string, unknown>;
     required?: string[];
   };
-  execute: (id: string, params: Record<string, unknown>, config: CloudphonePluginConfig) => Promise<McpToolResult>;
+  execute: (id: string, params: Record<string, unknown>) => Promise<McpToolResult>;
+}
+
+/** 带配置功能的工具扩展类型 */
+export interface ToolWithConfig extends ToolDefinition {
+  _config: CloudphonePluginConfig;
+  setConfig: (config: CloudphonePluginConfig) => void;
 }
 
 /** CloudPhone API 设备连接链路响应体类型 */
@@ -60,7 +66,7 @@ interface DeviceConnectionLinkResponse {
  * 原样返回输入内容，用于验证工具调用链路是否正常。
  */
 const echoTool: ToolDefinition = {
-  name: "echo",
+  name: "cloudphone_echo",
   description: "将输入的文本原样返回，用于验证工具调用是否正常。",
   parameters: {
     type: "object",
@@ -78,14 +84,14 @@ const echoTool: ToolDefinition = {
 };
 
 /**
- * 工具：get_device_connection_link
+ * 工具：cloudphone_get_device_connection_link
  * 查询指定设备的 SSH 连接链路信息。
  *
  * API: GET {baseUrl}/webide/api/autojs-stream/device-connection-link/{deviceId}
  * Auth: Bearer Token
  */
-const getDeviceConnectionLinkTool: ToolDefinition = {
-  name: "get_device_connection_link",
+const getDeviceConnectionLinkTool: ToolWithConfig = {
+  name: "cloudphone_get_device_connection_link",
   description:
     "查询指定设备的 SSH 连接链路信息，返回 SSH 连接地址（host:port）和链路过期时间。需要提供设备 ID。",
   parameters: {
@@ -98,7 +104,13 @@ const getDeviceConnectionLinkTool: ToolDefinition = {
     },
     required: ["deviceId"],
   },
-  execute: async (_id, { deviceId }, config: CloudphonePluginConfig) => {
+  // 通过闭包接收配置
+  _config: {} as CloudphonePluginConfig,
+  setConfig(config: CloudphonePluginConfig) {
+    this._config = config;
+  },
+  execute: async (_id, { deviceId }) => {
+    const config = getDeviceConnectionLinkTool._config;
     const base = config.baseUrl ?? "https://cptest.yaltc.cn";
     const timeout = config.timeout ?? 5000;
     const url = `${base}/webide/api/autojs-stream/device-connection-link/${String(deviceId)}`;
@@ -147,23 +159,8 @@ const getDeviceConnectionLinkTool: ToolDefinition = {
       return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
     }
 
-    const data = body.data;
-    if (!data) {
-      const result = { ok: false, message: "API 返回数据为空", traceId: body.traceId };
-      return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
-    }
-
-    const result = {
-      ok: true,
-      deviceId: data.deviceId,
-      sshCommand: data.sshCommand,
-      macSshCommand: data.macSshCommand,
-      sshPwd: data.sshPwd,
-      expireTime: data.expireTime,
-      expireAt: new Date(data.expireTime * 1000).toISOString(),
-      traceId: body.traceId,
-    };
-    return { content: [{ type: "text" as const, text: JSON.stringify(result) }] };
+    // 直接返回完整 API 响应
+    return { content: [{ type: "text" as const, text: JSON.stringify(body) }] };
   },
 };
 

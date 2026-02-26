@@ -1,4 +1,5 @@
 import { tools, CloudphonePluginConfig, McpToolResult } from "./tools";
+import { version } from "../package.json";
 
 /**
  * OpenClaw 插件 API 简化类型声明。
@@ -45,7 +46,7 @@ const plugin = {
 
   register(api: PluginApi) {
     const config = resolveConfig(api);
-    api.logger.info(`[cloudphone] 加载完成，baseUrl=${config.baseUrl ?? "(未配置，使用默认值)"}`);
+    api.logger.info(`[cloudphone] 插件加载完成，版本=${version}，baseUrl=${config.baseUrl ?? "(未配置，使用默认值)"}`);
 
     for (const tool of tools) {
       api.registerTool({
@@ -57,7 +58,11 @@ const plugin = {
             `[cloudphone] 工具 ${tool.name} 开始执行，id=${id}，params=${JSON.stringify(params)}`
           );
           try {
-            const result = await tool.execute(id, params, config);
+            // 如果工具有 setConfig 方法，通过它传递配置（闭包方式）
+            if (typeof (tool as any).setConfig === "function") {
+              (tool as any).setConfig(config);
+            }
+            const result = await tool.execute(id, params);
             api.logger.info(
               `[cloudphone] 工具 ${tool.name} 返回值: ${JSON.stringify(result)}`
             );
